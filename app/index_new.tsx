@@ -58,14 +58,14 @@ export default function Index() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       {/* Custom Header */}
-      {/* <Appbar.Header
+      <Appbar.Header
         mode="center-aligned"
         elevated={false}
         style={{ backgroundColor: theme.colors.background }}
       >
         <Appbar.Action icon="theme-light-dark" onPress={() => toggleTheme()} />
         <Appbar.Content title="Tartoro" />
-      </Appbar.Header> */}
+      </Appbar.Header>
 
       {/* Website View */}
       <View style={{ flex: 1, marginTop: 10 }}>

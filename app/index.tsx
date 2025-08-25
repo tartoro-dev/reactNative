@@ -1,32 +1,15 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
-  FlatList,
-  Alert,
   SafeAreaView,
-  TouchableOpacity,
   ActivityIndicator,
-  StyleProp,
-  ToastAndroid,
-  useColorScheme,
 } from "react-native";
 import {
   useTheme,
   Text,
-  IconButton,
   Appbar,
-  SegmentedButtons,
-  Button,
 } from "react-native-paper";
-import { useFonts } from "expo-font";
-import * as SplashScreen from "expo-splash-screen";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LinearGradient } from "expo-linear-gradient";
-import { format } from "date-fns";
-import { useThemeContext } from "@/context/ThemeContext";
-import { useRouter } from "expo-router";
-import { useCounterContext } from "@/context/counterContext";
 import Animated, {
   Easing,
   runOnJS,
@@ -34,11 +17,11 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import {
-  Directions,
-  Gesture,
-  GestureDetector,
-} from "react-native-gesture-handler";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useThemeContext } from "@/context/ThemeContext";
+import { WebView } from 'react-native-webview';
 
 const BUTTON_WIDTH = 150;
 const BUTTON_GAP = 0;
@@ -78,6 +61,7 @@ export default function Index() {
   const [currentView, setCurrentView] = useState<"current" | "archive">(
     "current"
   );
+  const [viewMode, setViewMode] = useState<"counters" | "website">("website"); // New state for switching between counters and website
   const [tick, setTick] = useState(0); // State to force updates for elapsed time
 
   const router = useRouter(); // Initialize router
@@ -543,84 +527,112 @@ export default function Index() {
         style={{ backgroundColor: theme.colors.background }}
       >
         <Appbar.Action icon="theme-light-dark" onPress={() => toggleTheme()} />
-        <Appbar.Content title="" />
-        <Appbar.Action
-          icon="plus"
-          size={28}
-          onPress={() => {
-            // Removed direct modal state management
-            router.push("/add.modal"); // Navigate to the add.modal screen
-          }}
+        <Appbar.Action 
+          icon={viewMode === "website" ? "counter" : "web"} 
+          onPress={() => setViewMode(viewMode === "website" ? "counters" : "website")} 
         />
+        <Appbar.Content title={viewMode === "website" ? "Website" : "TimeKeeper"} />
+        {viewMode === "counters" && (
+          <Appbar.Action
+            icon="plus"
+            size={28}
+            onPress={() => {
+              // Removed direct modal state management
+              router.push("/add.modal"); // Navigate to the add.modal screen
+            }}
+          />
+        )}
       </Appbar.Header>
 
-      <View style={styles.segmentContainer}>
-        <Animated.View
-          style={[
-            styles.sliderBackground,
-            animatedSliderStyle,
-            {
-              backgroundColor: "#4285F4",
-            },
-          ]}
-        />
-        <Button
-          labelStyle={[
-            styles.buttonLabel,
-            {
-              fontSize: currentView === "current" ? 17 : 15,
-              fontWeight: currentView === "current" ? "bold" : "900",
-            },
-          ]}
-          onPress={() => setCurrentView("current")}
-          style={[styles.topbtn, styles.transparentButton, {}]}
-          textColor={themeMode === "dark" ? "#fff" : "#000"}
-        >
-          Counters
-        </Button>
-
-        <Button
-          labelStyle={[
-            styles.buttonLabel,
-            {
-              fontSize: currentView === "archive" ? 17 : 15,
-              fontWeight: currentView === "archive" ? "bold" : "900",
-            },
-          ]}
-          onPress={() => setCurrentView("archive")}
-          style={[styles.topbtn, styles.transparentButton]}
-          textColor={themeMode === "dark" ? "#fff" : "#000"}
-        >
-          Archives
-        </Button>
-      </View>
-      <GestureDetector
-        gesture={Gesture.Simultaneous(flingRightGesture, flingLeftGesture)}
-      >
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={displayedCounters}
-            renderItem={renderCounterItem} // No conditional rendering based on isModalVisible
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={
-              <View style={styles.centered}>
-                <Text style={styles.emptyText}>
-                  No counters {currentView === "archive" ? "archived" : "yet"}.
+      {viewMode === "website" ? (
+        // Website View
+        <View style={{ flex: 1, marginTop: 10 }}>
+          <WebView
+            source={{ uri: 'https://tartoro.com' }}
+            style={{ flex: 1 }}
+            startInLoadingState={true}
+            renderLoading={() => (
+              <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={{ color: theme.colors.onBackground, marginTop: 10 }}>
+                  Loading tartoro.com...
                 </Text>
-                {currentView === "current" && !isDataLoaded && (
-                  <ActivityIndicator style={{ marginTop: 20 }} size="large" />
-                )}
-                {currentView === "current" &&
-                  isDataLoaded &&
-                  displayedCounters.length === 0 && (
-                    <Text style={styles.emptyText}>Press '+' to add one!</Text>
-                  )}
               </View>
-            }
-            contentContainerStyle={styles.listContent}
+            )}
           />
         </View>
-      </GestureDetector>
+      ) : (
+        // Counters View
+        <>
+          <View style={styles.segmentContainer}>
+            <Animated.View
+              style={[
+                styles.sliderBackground,
+                animatedSliderStyle,
+                {
+                  backgroundColor: "#4285F4",
+                },
+              ]}
+            />
+            <Button
+              labelStyle={[
+                styles.buttonLabel,
+                {
+                  fontSize: currentView === "current" ? 17 : 15,
+                  fontWeight: currentView === "current" ? "bold" : "900",
+                },
+              ]}
+              onPress={() => setCurrentView("current")}
+              style={[styles.topbtn, styles.transparentButton, {}]}
+              textColor={themeMode === "dark" ? "#fff" : "#000"}
+            >
+              Counters
+            </Button>
+
+            <Button
+              labelStyle={[
+                styles.buttonLabel,
+                {
+                  fontSize: currentView === "archive" ? 17 : 15,
+                  fontWeight: currentView === "archive" ? "bold" : "900",
+                },
+              ]}
+              onPress={() => setCurrentView("archive")}
+              style={[styles.topbtn, styles.transparentButton]}
+              textColor={themeMode === "dark" ? "#fff" : "#000"}
+            >
+              Archives
+            </Button>
+          </View>
+          <GestureDetector
+            gesture={Gesture.Simultaneous(flingRightGesture, flingLeftGesture)}
+          >
+            <View style={{ flex: 1 }}>
+              <FlatList
+                data={displayedCounters}
+                renderItem={renderCounterItem} // No conditional rendering based on isModalVisible
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={
+                  <View style={styles.centered}>
+                    <Text style={styles.emptyText}>
+                      No counters {currentView === "archive" ? "archived" : "yet"}.
+                    </Text>
+                    {currentView === "current" && !isDataLoaded && (
+                      <ActivityIndicator style={{ marginTop: 20 }} size="large" />
+                    )}
+                    {currentView === "current" &&
+                      isDataLoaded &&
+                      displayedCounters.length === 0 && (
+                        <Text style={styles.emptyText}>Press '+' to add one!</Text>
+                      )}
+                  </View>
+                }
+                contentContainerStyle={styles.listContent}
+              />
+            </View>
+          </GestureDetector>
+        </>
+      )}
     </SafeAreaView>
   );
 }
